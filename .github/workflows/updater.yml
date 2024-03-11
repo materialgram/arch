@@ -1,0 +1,40 @@
+name: Update Repo
+
+on:
+  repository_dispatch:
+    types: [new-release]
+  
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    container:
+      image: omanshkrishn/materialgram:latest
+    
+    steps:
+    - name: Update System
+      run: |
+        pacman -Syu --noconfirm
+        pacman -Sc --noconfirm
+    
+    - name: Add a user
+      run: |
+        useradd -m builder
+        echo "builder ALL=(ALL) NOPASSWD: ALL" | tee -a /etc/sudoers
+
+    - name: Build and Push
+      run: |
+        [ -d "/home/builder" ] && cd /home/builder || { mkdir -p /home/builder && cd /home/builder; }
+        chmod 777 /home/builder && chown builder:builder /home/builder
+        su builder -c 'git clone https://github.com/materialgram/materialgram-bin.git -b main /home/builder/materialgram-bin  && cd /home/builder/materialgram-bin && \
+                       sed -i "s/pkgver=.*/pkgver=${{ github.event.client_payload.tagname }}/" PKGBUILD && \
+                       updpkgsums && makepkg --printsrcinfo > .SRCINFO && makepkg -s --noconfirm'
+        mkdir /home/builder/repo && cd /home/builder/repo
+        git config --global user.email "omansh11597@gmail.com" && git config --global user.name "Omansh Krishn" && git init && git branch -m x86_64
+        cp /home/builder/materialgram-bin/*zst .
+        rm *debug* || echo "debug pkg wasn't built"
+        repo-add materialgram.db.tar.gz *zst
+        curl -s https://raw.githubusercontent.com/materialgram/arch/x86_64/installer.sh > installer.sh && chmod +x installer.sh
+        mkdir -p .github/workflows && curl -s https://raw.githubusercontent.com/materialgram/arch/workflow/.github/workflows/updater.yml > .github/workflows/updater.yml
+        git add . && git commit -s -m "materialgram: Update ${{ github.event.client_payload.tagname }}"
+        git push "https://omansh-krishn:${{ secrets.PAT }}@github.com/materialgram/arch.git" x86_64 -f
+
