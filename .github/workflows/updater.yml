@@ -28,8 +28,9 @@ jobs:
         su builder -c 'git clone https://github.com/materialgram/materialgram-bin.git -b main /home/builder/materialgram-bin  && cd /home/builder/materialgram-bin && \
                        sed -i "s/pkgver=.*/pkgver=${{ github.event.client_payload.tagname }}/" PKGBUILD && \
                        updpkgsums && makepkg --printsrcinfo > .SRCINFO && makepkg -s --noconfirm'
-        mkdir /home/builder/repo && cd /home/builder/repo
         git config --global user.email "omansh11597@gmail.com" && git config --global user.name "Omansh Krishn" && git init && git branch -m x86_64
+        git config --global --add safe.directory /home/builder
+        git clone https://github.com/materialgram/arch repo && cd repo && rm **
         cp /home/builder/materialgram-bin/*zst .
         rm *debug* || echo "debug pkg wasn't built"
         repo-add materialgram.db.tar.gz *zst
