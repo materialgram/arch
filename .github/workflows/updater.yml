@@ -39,3 +39,12 @@ jobs:
         git add . && git commit -s -m "materialgram: Update ${{ github.event.client_payload.tagname }}"
         git push "https://omansh-krishn:${{ secrets.PAT }}@github.com/materialgram/arch.git" x86_64 -f
 
+  trigger-workflow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger RPM repository dispatch event
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.bvPAT }}
+          repository: burhancodes/materialgram-rpm
+          event-type: new-release
